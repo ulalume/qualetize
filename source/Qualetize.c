@@ -547,9 +547,20 @@ uint8_t Qualetize(
 	//! And now cluster the palette colours
 	uint32_t PalIdx;
 	uint32_t nOutputColours = Plan->nPaletteColours;
-	if(Plan->FirstColourIsTransparent) nOutputColours--;
+	if(Plan->FirstColourIsTransparent || Plan->FirstColourIsShared) nOutputColours--;
 	uint32_t ColourClusterPasses = Plan->nColourClusterPasses;
 	if(!ColourClusterPasses) ColourClusterPasses = DEFAULT_COLOUR_PASSES_PER_COLOURS / nOutputColours;
+
+	//! Convert the shared colour into the working colourspace
+	//! NOTE: This colour is always fully opaque, so pre-multiplied
+	//! alpha does not apply to it.
+	Vec4f_t SharedColour = VEC4F_EMPTY;
+	if(Plan->FirstColourIsShared) {
+		BGRA8_t Col = Plan->SharedColour;
+		Col.a = 255;
+		SharedColour = BGRA8_To_Vec4fRGBA(&Col);
+		SharedColour = ConvertToColourspace(&SharedColour, Plan->Colourspace);
+	}
 	for(PalIdx=0;PalIdx<Plan->nTilePalettes;PalIdx++) {
 		//! Read pixels of all tiles falling into this palette
 		uint32_t n;
@@ -607,6 +618,7 @@ uint8_t Qualetize(
 		//! Extract palette colours from the centroids
 		Vec4f_t *ThisPalette = PaletteData + PalIdx*Plan->nPaletteColours;
 		if(Plan->FirstColourIsTransparent) *ThisPalette++ = VEC4F_EMPTY;
+		else if(Plan->FirstColourIsShared) *ThisPalette++ = SharedColour;
 		for(n=0;n<nOutputColours;n++) ThisPalette[n] = ColourClusters[n].Centroid;
 
 		//! Now sort the palette colours
@@ -728,7 +740,8 @@ uint8_t Qualetize(
 			x = Vec4f_Max(&x, &vZeros);
 			x = Vec4f_Min(&x, &vOnes);
 			Vec4f_t xq = Quantize_WithPlan(&x, Plan, QUANTIZE_NEAREST);
-			for(k=0;k<n;k++) {
+			//! NOTE: The shared colour is fixed, so it is never modified here
+			for(k=Plan->FirstColourIsShared ? 1 : 0;k<n;k++) {
 				//! If we already quantized to this exact colour,
 				//! split to floor/ceiling modes to get a better
 				//! chance at error dithering

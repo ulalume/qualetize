@@ -223,6 +223,11 @@ int main(int argc, const char *argv[]) {
 			"                         pixel will be made fully transparent, regardless of\n"
 			"                         any alpha information.\n"
 			"                         Can be `none`, or a `#RRGGBB` hex triad.\n"
+			"  -col0shared:none     - Set shared first colour of every palette. When set,\n"
+			"                         the first colour of every palette is this colour, and\n"
+			"                         is excluded from the colour clustering. Note that this\n"
+			"                         option is ignored when -col0isclear:y is used.\n"
+			"                         Can be `none`, or a `#RRGGBB` hex triad.\n"
 			"Colourspaces available:\n"
 			"  srgb\n"
 			"  rgb-psy      (Psy = Non-linear light, weighted components)\n"
@@ -264,6 +269,8 @@ int main(int argc, const char *argv[]) {
 	Plan.TransparentColour    = (BGRA8_t){0,0,0,0};
 	Plan.CustomLevels[0] = Plan.CustomLevels[1] = Plan.CustomLevels[2] = Plan.CustomLevels[3] = NULL;
 	Plan.CustomLevelCount[0] = Plan.CustomLevelCount[1] = Plan.CustomLevelCount[2] = Plan.CustomLevelCount[3] = 0;
+	Plan.FirstColourIsShared  = 0;
+	Plan.SharedColour         = (BGRA8_t){0,0,0,0};
 	float *CustomLevelsAlloc[4] = {NULL,NULL,NULL,NULL};
 	{
 		int argi;
@@ -344,6 +351,12 @@ int main(int argc, const char *argv[]) {
 				if(ParseClearColour(ArgStr, &Plan.TransparentColour) == -1) {
 					printf("WARNING: Unrecognized transparent colour: %s\n", ArgStr);
 				}
+				ArgOk = 1;
+			}
+			ARGMATCH(argv[argi], "-col0shared:") {
+				if(ParseClearColour(ArgStr, &Plan.SharedColour) == -1) {
+					printf("WARNING: Unrecognized shared colour: %s\n", ArgStr);
+				} else Plan.FirstColourIsShared = (Plan.SharedColour.a != 0) ? 1 : 0;
 				ArgOk = 1;
 			}
 #undef ARGMATCH

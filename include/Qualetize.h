@@ -48,6 +48,8 @@ struct QualetizePlan_t {
 	BGRA8_t  TransparentColour;        //! RGB value of transparent colour (only used if alpha != 0)
 	const float *CustomLevels[4];      //! Optional per-channel quantization levels (R,G,B,A), NULL = use ColourDepth
 	uint8_t     CustomLevelCount[4];   //! Number of entries for each CustomLevels channel
+	uint8_t  FirstColourIsShared;      //! 0 = All palette entries used,  1 = First palette entry is always SharedColour
+	BGRA8_t  SharedColour;             //! RGB value of the shared colour (only used if FirstColourIsShared != 0 and not transparent)
 };
 
 /************************************************/
